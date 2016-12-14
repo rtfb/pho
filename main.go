@@ -14,11 +14,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/goods/httpbuf"
 	"github.com/gorilla/pat"
 	"github.com/gorilla/sessions"
 	"github.com/nfnt/resize"
 	"github.com/rtfb/bark"
-	"github.com/rtfb/httpbuf"
 )
 
 const (

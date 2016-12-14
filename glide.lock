@@ -1,0 +1,22 @@
+hash: 2921a3d85d1562bfef4d671fc6dfd530dbaff7c1b7b58901bd8ebfbe72e9782d
+updated: 2016-12-14T21:59:43.373211036+02:00
+imports:
+- name: github.com/goods/httpbuf
+  version: 5709e9bb814c932e48b6737e1cf214a6522453a2
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: 757bef944d0f21880861c2dd9c871ca543023cba
+- name: github.com/gorilla/pat
+  version: cf955c3d1f2c27ee96f93e9738085c762ff5f49d
+- name: github.com/gorilla/securecookie
+  version: fa5329f913702981df43dcb2a380bac429c810b5
+- name: github.com/gorilla/sessions
+  version: 52389059572b4736b2b7d899b0242ecc449c8779
+- name: github.com/nfnt/resize
+  version: 891127d8d1b52734debe1b3c3d7e747502b6c366
+- name: github.com/rtfb/bark
+  version: 07d6537e2e59f361d8bd2289666df08d35642be5
+- name: github.com/rtfb/httputil
+  version: 9649b2ef663485e5063fc834cb69d26fc5b4196a
+testImports: []
