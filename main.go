@@ -1,14 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"flag"
 	"fmt"
 	"html/template"
 	"image"
 	"image/jpeg"
+	"io"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,8 +25,9 @@ import (
 )
 
 const (
-	imagePath = "./img"
-	thumbPath = "./img/thumb"
+	imagePath   = "./img"
+	thumbPath   = "./img/thumb"
+	maxFileSize = 50 * 1024 * 1024
 )
 
 var (
@@ -136,8 +140,47 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) error {
 }
 
 func uploadFileHandler(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprint(w, "TODO")
+	mr, err := r.MultipartReader()
+	if err != nil {
+		return logger.LogIf(err)
+	}
+	files := ""
+	part, err := mr.NextPart()
+	for err == nil {
+		if name := part.FormName(); name != "" {
+			if part.FileName() != "" {
+				files += fmt.Sprintf("[foo]: /%s", part.FileName())
+				handleUpload(r, part, "img")
+			}
+		}
+		part, err = mr.NextPart()
+	}
+	w.Write([]byte(files))
 	return nil
+}
+
+func handleUpload(r *http.Request, p *multipart.Part, root string) {
+	defer func() {
+		if rec := recover(); rec != nil {
+			logger.Println(rec)
+		}
+	}()
+	lr := &io.LimitedReader{R: p, N: maxFileSize + 1}
+	filename := filepath.Join(root, p.FileName())
+	fo, err := os.Create(filename)
+	if err != nil {
+		logger.Printf("err writing %q!, err = %s\n", filename, err.Error())
+	}
+	defer fo.Close()
+	w := bufio.NewWriter(fo)
+	_, err = io.Copy(w, lr)
+	if err != nil {
+		logger.Printf("err writing %q!, err = %s\n", filename, err.Error())
+	}
+	if err = w.Flush(); err != nil {
+		logger.Printf("err flushing writer for %q!, err = %s\n", filename, err.Error())
+	}
+	return
 }
 
 type handlerFunc func(http.ResponseWriter, *http.Request) error
@@ -197,7 +240,7 @@ func initRoutes() *pat.Router {
 	r.Add(G, "/img/", http.FileServer(http.Dir("."))).Name("img")
 	r.Add(G, "/bower_components/", http.FileServer(http.Dir("."))).Name("bower_components")
 	r.Add(G, "/up", mkHandler(uploadHandler)).Name("upload")
-	r.Add(P, "/uploadFile", mkHandler(uploadFileHandler)).Name("upload_file")
+	r.Add(P, "/upload-file", mkHandler(uploadFileHandler)).Name("upload-file")
 	r.Add(G, "/", mkHandler(indexHandler)).Name("home_page")
 	return r
 }
