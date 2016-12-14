@@ -9,10 +9,16 @@ import (
 	"image/jpeg"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/gorilla/pat"
+	"github.com/gorilla/sessions"
 	"github.com/nfnt/resize"
+	"github.com/rtfb/bark"
+	"github.com/rtfb/httpbuf"
 )
 
 const (
@@ -20,7 +26,10 @@ const (
 	thumbPath = "./img/thumb"
 )
 
-var ingestPath string
+var (
+	ingestPath string
+	logger     *bark.Logger
+)
 
 type imageEntry struct {
 	Image string
@@ -101,6 +110,92 @@ func ingestImages(src, img, thumb string) error {
 	return nil
 }
 
+func indexHandler(w http.ResponseWriter, r *http.Request) error {
+	data := map[string]interface{}{
+		"entries": collectImages(imagePath, thumbPath),
+	}
+	tmpl, err := template.New("index.html").ParseFiles("./tmpl/index.html")
+	var out bytes.Buffer
+	err = tmpl.Execute(&out, data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Fprintf(w, out.String())
+	return nil
+}
+
+func uploadHandler(w http.ResponseWriter, r *http.Request) error {
+	fmt.Fprintf(w, "TODO")
+	return nil
+}
+
+func uploadFileHandler(w http.ResponseWriter, r *http.Request) error {
+	fmt.Fprintf(w, "TODO")
+	return nil
+}
+
+type handlerFunc func(http.ResponseWriter, *http.Request) error
+
+type handler struct {
+	h     handlerFunc
+	logRq bool
+}
+
+func (h handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	startTime := time.Now().UTC()
+	if h.logRq {
+		defer logger.LogRq(req, startTime)
+	}
+	// We're using httpbuf here to satisfy an unobvious requirement:
+	// sessions.Save() *must* be called before anything is written to
+	// ResponseWriter. So we pass this buffer in place of writer here, then
+	// call Save() and finally apply the buffer to the real writer.
+	buf := new(httpbuf.Buffer)
+	err := h.h(buf, req)
+	if err != nil {
+		internalError(w, req, err, "Error in handler")
+		return
+	}
+	//save the session
+	if err = sessions.Save(req, w); err != nil {
+		internalError(w, req, err, "Session save err")
+		return
+	}
+	buf.Apply(w)
+}
+
+func internalError(w http.ResponseWriter, req *http.Request, err error, prefix string) error {
+	logger.Printf("%s: %s", prefix, err.Error())
+	return performStatus(w, req, http.StatusInternalServerError)
+}
+
+//PerformStatus runs the passed in status on the request and calls the appropriate block
+func performStatus(w http.ResponseWriter, req *http.Request, status int) error {
+	return performSimpleStatus(w, status)
+}
+
+func performSimpleStatus(w http.ResponseWriter, status int) error {
+	w.Write([]byte(fmt.Sprintf("HTTP Error %d\n", status)))
+	return nil
+}
+
+func initRoutes() *pat.Router {
+	const (
+		G = "GET"
+		P = "POST"
+	)
+	r := pat.New()
+	mkHandler := func(f handlerFunc) *handler {
+		return &handler{h: f, logRq: true}
+	}
+	r.Add(G, "/img/", http.FileServer(http.Dir("."))).Name("img")
+	r.Add(G, "/bower_components/", http.FileServer(http.Dir("."))).Name("bower_components")
+	r.Add(G, "/up", mkHandler(uploadHandler)).Name("upload")
+	r.Add(P, "/uploadFile", mkHandler(uploadFileHandler)).Name("upload_file")
+	r.Add(G, "/", mkHandler(indexHandler)).Name("home_page")
+	return r
+}
+
 func main() {
 	flag.Parse()
 	if ingestPath != "" {
@@ -119,14 +214,13 @@ func main() {
 		}
 		return
 	}
-	data := map[string]interface{}{
-		"entries": collectImages(imagePath, thumbPath),
-	}
-	tmpl, err := template.New("index.html").ParseFiles("./tmpl/index.html")
-	var out bytes.Buffer
-	err = tmpl.Execute(&out, data)
+	pwd, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		panic("wtf")
 	}
-	fmt.Println(out.String())
+	println(pwd)
+	logger = bark.AppendFile("pho.log")
+	addr := ":8080"
+	logger.Printf("The server is listening on %s...", addr)
+	logger.LogIf(http.ListenAndServe(addr, initRoutes()))
 }
