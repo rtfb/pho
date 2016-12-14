@@ -120,7 +120,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Fprintf(w, out.String())
+	fmt.Fprint(w, out.String())
 	return nil
 }
 
