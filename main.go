@@ -125,12 +125,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request) error {
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprintf(w, "TODO")
+	tmpl, err := template.New("upload.html").ParseFiles("./tmpl/upload.html")
+	var out bytes.Buffer
+	err = tmpl.Execute(&out, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Fprint(w, out.String())
 	return nil
 }
 
 func uploadFileHandler(w http.ResponseWriter, r *http.Request) error {
-	fmt.Fprintf(w, "TODO")
+	fmt.Fprint(w, "TODO")
 	return nil
 }
 
