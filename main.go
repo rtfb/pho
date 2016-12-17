@@ -15,13 +15,17 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/goods/httpbuf"
 	"github.com/gorilla/pat"
 	"github.com/gorilla/sessions"
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/nfnt/resize"
 	"github.com/rtfb/bark"
+	uuid "github.com/satori/go.uuid"
 )
 
 const (
@@ -33,6 +37,7 @@ const (
 var (
 	ingestPath string
 	logger     *bark.Logger
+	db         *gorm.DB
 )
 
 type imageEntry struct {
@@ -145,12 +150,17 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) error {
 		return logger.LogIf(err)
 	}
 	files := ""
+	uploadRoot := "uploads/" + uuid.NewV4().String()
+	err = os.MkdirAll(uploadRoot, 0777)
+	if err != nil {
+		return logger.LogIf(err)
+	}
 	part, err := mr.NextPart()
 	for err == nil {
 		if name := part.FormName(); name != "" {
 			if part.FileName() != "" {
 				files += fmt.Sprintf("[foo]: /%s", part.FileName())
-				handleUpload(r, part, "img")
+				handleUpload(r, part, uploadRoot)
 			}
 		}
 		part, err = mr.NextPart()
@@ -180,7 +190,14 @@ func handleUpload(r *http.Request, p *multipart.Part, root string) {
 	if err = w.Flush(); err != nil {
 		logger.Printf("err flushing writer for %q!, err = %s\n", filename, err.Error())
 	}
-	return
+	store := StoredImage{
+		UploadPath: filename,
+		UploadedAt: time.Now(),
+	}
+	err = db.Save(&store).Error
+	if err != nil {
+		logger.Printf("err inserting DB record for %q!, err = %s\n", filename, err.Error())
+	}
 }
 
 type handlerFunc func(http.ResponseWriter, *http.Request) error
@@ -245,6 +262,44 @@ func initRoutes() *pat.Router {
 	return r
 }
 
+func initDB() *gorm.DB {
+	dialect := "postgres"
+	conn := "dbname=pho sslmode=disable user=tstusr password=tstpwd"
+	logDbConn(dialect, conn)
+	db, err := gorm.Open(dialect, conn)
+	if err != nil {
+		panic(err)
+	}
+	err = db.DB().Ping()
+	if err != nil {
+		panic(err)
+	}
+	// db.LogMode(conf.LogSQL)
+	db.LogMode(true)
+	db.SingularTable(true)
+	return db
+}
+
+func logDbConn(dialect, conn string) {
+	if dialect == "postgres" {
+		conn = censorPostgresConnStr(conn)
+	}
+	logger.Printf("Connecting to %q DB via conn %q\n", dialect, conn)
+}
+
+func censorPostgresConnStr(conn string) string {
+	parts := strings.Split(conn, " ")
+	var newParts []string
+	for _, part := range parts {
+		if strings.HasPrefix(part, "password=") {
+			newParts = append(newParts, "password=***")
+		} else {
+			newParts = append(newParts, part)
+		}
+	}
+	return strings.Join(newParts, " ")
+}
+
 func main() {
 	flag.Parse()
 	if ingestPath != "" {
@@ -269,6 +324,7 @@ func main() {
 	}
 	println(pwd)
 	logger = bark.AppendFile("pho.log")
+	db = initDB()
 	addr := ":8080"
 	logger.Printf("The server is listening on %s...", addr)
 	logger.LogIf(http.ListenAndServe(addr, initRoutes()))
