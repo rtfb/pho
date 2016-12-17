@@ -62,9 +62,23 @@ func collectImages(imagePath, thumbPath string) []imageEntry {
 	return entries
 }
 
+func collectImagesDB() []imageEntry {
+	var dbImages []StoredImage
+	err := db.Where("processed_at is not null").Find(&dbImages).Error
+	logger.LogIf(err)
+	var entries []imageEntry
+	for _, im := range dbImages {
+		entries = append(entries, imageEntry{
+			Image: *im.DisplayPath,
+			Thumb: *im.ThumbPath,
+		})
+	}
+	return entries
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) error {
 	data := map[string]interface{}{
-		"entries": collectImages(imagePath, thumbPath),
+		"entries": collectImagesDB(),
 	}
 	tmpl, err := template.New("index.html").ParseFiles("./tmpl/index.html")
 	var out bytes.Buffer
