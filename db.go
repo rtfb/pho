@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/jinzhu/gorm"
+)
 
 // Image describes an image to be displayed.
 type Image struct {
@@ -32,4 +36,32 @@ type Album struct {
 	ID   string `gorm:"column:id"`
 	Name string `gorm:"column:name"`
 	URL  string `gorm:"column:url"`
+}
+
+// Tx wraps Gorm transaction
+type Tx struct {
+	db   *gorm.DB
+	open bool
+}
+
+func (t *Tx) commit() {
+	if t.open {
+		t.db.Commit()
+		t.open = false
+	}
+}
+
+func (t *Tx) rollback() {
+	if t.open {
+		t.db.Rollback()
+		t.open = false
+	}
+}
+
+func newTx(db *gorm.DB) *Tx {
+	tx := db.Begin()
+	return &Tx{
+		db:   tx,
+		open: true,
+	}
 }

@@ -70,11 +70,11 @@ func processOne(upload *StoredImage) error {
 	upload.UploadPath = nil
 	now := time.Now()
 	upload.ProcessedAt = &now
-	tx := db.Begin()
-	if tx.Error != nil {
-		return tx.Error
+	tx := newTx(db)
+	if tx.db.Error != nil {
+		return tx.db.Error
 	}
-	defer tx.Rollback()
+	defer tx.rollback()
 	err = db.Save(upload).Error
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func processOne(upload *StoredImage) error {
 	if err != nil {
 		return err
 	}
-	tx.Commit()
+	tx.commit()
 	return nil
 }
 
