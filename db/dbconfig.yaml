@@ -1,0 +1,11 @@
+development:
+    dialect: postgres
+    datasource: dbname=pho sslmode=disable user=tstusr password=tstpwd
+    dir: db/migrations
+    table: migrations
+
+production:
+    dialect: postgres
+    datasource: dbname=pho sslmode=disable
+    dir: db/migrations
+    table: migrations
