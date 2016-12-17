@@ -1,5 +1,5 @@
-hash: 46faf82fba858316521dbf4940f0c892ceaccc2cd02c4112ecf424c176b24704
-updated: 2016-12-17T14:48:32.610833287+02:00
+hash: 34912e86af24a11f157ea4297b6ce656e71ebe528b715183ee69c2c0e12e2f87
+updated: 2016-12-17T20:28:48.45955412+02:00
 imports:
 - name: github.com/goods/httpbuf
   version: 5709e9bb814c932e48b6737e1cf214a6522453a2
@@ -29,4 +29,6 @@ imports:
   version: 9649b2ef663485e5063fc834cb69d26fc5b4196a
 - name: github.com/satori/go.uuid
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 testImports: []

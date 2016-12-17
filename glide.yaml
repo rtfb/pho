@@ -10,3 +10,4 @@ import:
 - package: github.com/jinzhu/gorm
   version: ^1.0.0
 - package: github.com/lib/pq
+- package: github.com/shurcooL/sanitized_anchor_name

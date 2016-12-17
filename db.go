@@ -19,10 +19,10 @@ type Image struct {
 // original to OrigPath and sets ProcessedAt.
 type StoredImage struct {
 	ID          string     `gorm:"column:id"`
-	UploadPath  string     `gorm:"column:upload_path"`
-	OrigPath    string     `gorm:"column:orig_path"`
-	ThumbPath   string     `gorm:"column:thumb_path"`
-	DisplayPath string     `gorm:"column:display_path"`
+	UploadPath  *string    `gorm:"column:upload_path"`
+	OrigPath    *string    `gorm:"column:orig_path"`
+	ThumbPath   *string    `gorm:"column:thumb_path"`
+	DisplayPath *string    `gorm:"column:display_path"`
 	UploadedAt  time.Time  `gorm:"column:uploaded_at"`
 	ProcessedAt *time.Time `gorm:"column:processed_at"`
 }

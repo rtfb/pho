@@ -6,8 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"html/template"
-	"image"
-	"image/jpeg"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,14 +21,11 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
-	"github.com/nfnt/resize"
 	"github.com/rtfb/bark"
 	uuid "github.com/satori/go.uuid"
 )
 
 const (
-	imagePath   = "./img"
-	thumbPath   = "./img/thumb"
 	maxFileSize = 50 * 1024 * 1024
 )
 
@@ -67,58 +62,6 @@ func collectImages(imagePath, thumbPath string) []imageEntry {
 	return entries
 }
 
-func writeJpeg(img image.Image, fullPath string) error {
-	out, err := os.Create(fullPath)
-	if err != nil {
-		return err
-	}
-	jpeg.Encode(out, img, nil)
-	out.Close()
-	return nil
-}
-
-func processOne(srcPath, imgPath, thumbPath, fileName string) error {
-	// open source image
-	srcImgFile, err := os.Open(filepath.Join(srcPath, fileName))
-	if err != nil {
-		log.Fatalf("open: %s\n", err)
-	}
-	// decode jpeg into image.Image
-	fullSizeImg, err := jpeg.Decode(srcImgFile)
-	if err != nil {
-		log.Fatalf("decode: %s\n", err)
-	}
-	srcImgFile.Close()
-	im := resize.Thumbnail(960, 720, fullSizeImg, resize.Lanczos3)
-	th := resize.Thumbnail(348, 464, fullSizeImg, resize.Lanczos3)
-	err = writeJpeg(im, filepath.Join(imgPath, fileName))
-	if err != nil {
-		log.Fatalf("write image: %s\n", err)
-	}
-	err = writeJpeg(th, filepath.Join(thumbPath, fileName))
-	if err != nil {
-		log.Fatalf("write thumbnail: %s\n", err)
-	}
-	return nil
-}
-
-func ingestImages(src, img, thumb string) error {
-	files, err := ioutil.ReadDir(src)
-	if err != nil {
-		log.Fatalf("read dir: %s\n", err)
-	}
-	for _, file := range files {
-		if !file.IsDir() {
-			log.Printf("Processing %s...", file.Name())
-			err = processOne(src, img, thumb, file.Name())
-			if err != nil {
-				log.Fatal(err)
-			}
-		}
-	}
-	return nil
-}
-
 func indexHandler(w http.ResponseWriter, r *http.Request) error {
 	data := map[string]interface{}{
 		"entries": collectImages(imagePath, thumbPath),
@@ -150,8 +93,8 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) error {
 		return logger.LogIf(err)
 	}
 	files := ""
-	uploadRoot := "uploads/" + uuid.NewV4().String()
-	err = os.MkdirAll(uploadRoot, 0777)
+	uploadRoot := filepath.Join(uploadPath, uuid.NewV4().String())
+	err = os.MkdirAll(uploadRoot, 0766)
 	if err != nil {
 		return logger.LogIf(err)
 	}
@@ -191,7 +134,7 @@ func handleUpload(r *http.Request, p *multipart.Part, root string) {
 		logger.Printf("err flushing writer for %q!, err = %s\n", filename, err.Error())
 	}
 	store := StoredImage{
-		UploadPath: filename,
+		UploadPath: &filename,
 		UploadedAt: time.Now(),
 	}
 	err = db.Save(&store).Error
@@ -318,13 +261,9 @@ func main() {
 		}
 		return
 	}
-	pwd, err := os.Getwd()
-	if err != nil {
-		panic("wtf")
-	}
-	println(pwd)
 	logger = bark.AppendFile("pho.log")
 	db = initDB()
+	imgProcJob()
 	addr := ":8080"
 	logger.Printf("The server is listening on %s...", addr)
 	logger.LogIf(http.ListenAndServe(addr, initRoutes()))
