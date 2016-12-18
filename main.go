@@ -297,7 +297,7 @@ func main() {
 		panic(err)
 	}
 	db = initDB()
-	imgProcJob()
+	launcUploadsProcessor()
 	addr := ":8080"
 	logger.Printf("The server is listening on %s...", addr)
 	logger.LogIf(http.ListenAndServe(addr, initRoutes()))

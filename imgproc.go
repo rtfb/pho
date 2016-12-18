@@ -112,6 +112,11 @@ func imgProcJob() {
 	}
 }
 
+func launcUploadsProcessor() {
+	imgProcJob()
+	time.AfterFunc(5*time.Second, launcUploadsProcessor)
+}
+
 func ingestImages(src, img, thumb string) error {
 	files, err := ioutil.ReadDir(src)
 	if err != nil {
