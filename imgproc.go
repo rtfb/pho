@@ -108,6 +108,10 @@ func imgProcJob() {
 		err := processOne(upload)
 		if err != nil {
 			logger.Printf("Error ingesting %s: %s", *upload.UploadPath, err.Error())
+			now := time.Now()
+			upload.ProcessedAt = &now
+			err = db.Save(upload).Error
+			logger.LogIf(err)
 		}
 	}
 }
