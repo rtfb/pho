@@ -96,15 +96,11 @@ func processOne(upload *StoredImage) error {
 		return err
 	}
 	tx.commit()
+	// TODO: clean up uploads/<uuid> dir after done
 	return nil
 }
 
 func imgProcJob() {
-	err := os.MkdirAll(origPath, 0766)
-	if err != nil {
-		logger.Printf("Error creating storage for originals: %s", err.Error())
-		return
-	}
 	var uploads []*StoredImage
 	db.Where("processed_at is ?", gorm.Expr("NULL")).Find(&uploads)
 	println(len(uploads))

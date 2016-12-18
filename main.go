@@ -257,6 +257,22 @@ func censorPostgresConnStr(conn string) string {
 	return strings.Join(newParts, " ")
 }
 
+func ensureDirs() error {
+	err := os.MkdirAll(origPath, 0766)
+	if err != nil {
+		return logger.LogIff(err, "Error creating storage for originals")
+	}
+	err = os.MkdirAll(imagePath, 0766)
+	if err != nil {
+		return logger.LogIff(err, "Error creating storage for display images")
+	}
+	err = os.MkdirAll(thumbPath, 0766)
+	if err != nil {
+		return logger.LogIff(err, "Error creating storage for thumbnails")
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	if ingestPath != "" {
@@ -276,6 +292,10 @@ func main() {
 		return
 	}
 	logger = bark.AppendFile("pho.log")
+	err := ensureDirs()
+	if err != nil {
+		panic(err)
+	}
 	db = initDB()
 	imgProcJob()
 	addr := ":8080"
