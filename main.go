@@ -33,6 +33,7 @@ var (
 	ingestPath string
 	logger     *bark.Logger
 	db         *gorm.DB
+	cfg        *config
 )
 
 type imageEntry struct {
@@ -221,9 +222,8 @@ func initRoutes() *pat.Router {
 
 func initDB() *gorm.DB {
 	dialect := "postgres"
-	conn := "dbname=pho sslmode=disable user=tstusr password=tstpwd"
-	logDbConn(dialect, conn)
-	db, err := gorm.Open(dialect, conn)
+	logDbConn(dialect, cfg.DBConn)
+	db, err := gorm.Open(dialect, cfg.DBConn)
 	if err != nil {
 		panic(err)
 	}
@@ -231,8 +231,7 @@ func initDB() *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	// db.LogMode(conf.LogSQL)
-	db.LogMode(true)
+	db.LogMode(cfg.LogSQL)
 	db.SingularTable(true)
 	return db
 }
@@ -288,6 +287,7 @@ func chdirToPackage() {
 
 func main() {
 	flag.Parse()
+	cfg = readConfigs()
 	if ingestPath != "" {
 		// TODO: expand glob before using
 		_, err := os.Stat(ingestPath)
@@ -312,7 +312,7 @@ func main() {
 	}
 	db = initDB()
 	launcUploadsProcessor()
-	addr := ":8080"
+	addr := cfg.Port
 	logger.Printf("The server is listening on %s...", addr)
 	logger.LogIf(http.ListenAndServe(addr, initRoutes()))
 }

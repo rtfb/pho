@@ -1,5 +1,5 @@
-hash: 34912e86af24a11f157ea4297b6ce656e71ebe528b715183ee69c2c0e12e2f87
-updated: 2016-12-17T20:28:48.45955412+02:00
+hash: 7414ed32fc13260a40d831cbcf6b0f45112ebc65a16ccf68430e4ebc9b793872
+updated: 2017-01-01T16:51:17.712456154+02:00
 imports:
 - name: github.com/goods/httpbuf
   version: 5709e9bb814c932e48b6737e1cf214a6522453a2
@@ -31,4 +31,6 @@ imports:
   version: 879c5887cd475cd7864858769793b2ceb0d44feb
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports: []

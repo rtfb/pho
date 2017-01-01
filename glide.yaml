@@ -11,3 +11,4 @@ import:
   version: ^1.0.0
 - package: github.com/lib/pq
 - package: github.com/shurcooL/sanitized_anchor_name
+- package: gopkg.in/yaml.v2
