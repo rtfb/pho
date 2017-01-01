@@ -1,8 +1,4 @@
 /bower_components
-/img
-/uploads
-/orig
 /index.html
-/pho
-/pho.log
 /vendor
+/build

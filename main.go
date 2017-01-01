@@ -212,7 +212,7 @@ func initRoutes() *pat.Router {
 		return &handler{h: f, logRq: true}
 	}
 	r.Add(G, "/img/", http.FileServer(http.Dir("."))).Name("img")
-	r.Add(G, "/bower_components/", http.FileServer(http.Dir("."))).Name("bower_components")
+	r.Add(G, "/static/", http.FileServer(http.Dir("."))).Name("static")
 	r.Add(G, "/up", mkHandler(uploadHandler)).Name("upload")
 	r.Add(P, "/upload-file", mkHandler(uploadFileHandler)).Name("upload-file")
 	r.Add(G, "/", mkHandler(indexHandler)).Name("home_page")
@@ -273,6 +273,19 @@ func ensureDirs() error {
 	return nil
 }
 
+func chdirToPackage() {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	pa := filepath.Join(wd, os.Args[0])
+	bindir := filepath.Dir(pa)
+	err = os.Chdir(bindir)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	flag.Parse()
 	if ingestPath != "" {
@@ -291,6 +304,7 @@ func main() {
 		}
 		return
 	}
+	chdirToPackage()
 	logger = bark.AppendFile("pho.log")
 	err := ensureDirs()
 	if err != nil {
